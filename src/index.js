@@ -1,84 +1,28 @@
 const puppeteer = require("puppeteer");
 
-const generateJsonFile = require("./functions/generateJsonFile");
+// const generateJsonFile = require("./functions/generateJsonFile");
 
-//TODO:
-/**
- * [] - remover codigo hardcoded
- * [] - arrumar a parte do sem link
- * [] - isolar as functions
- * [] - trocar o pre por todo conteudo de informacao
- */
-
-const BASE_URL = "https://ss64.com/bash/";
+const BASE_URL = "http://www.pea.org.br/empresas.htm";
 
 (async () => {
-  const promiseCommandListWithInfo = [];
-
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
   await page.goto(BASE_URL);
 
   const commandsList = await page.evaluate(() => {
-    const nodeList = document.querySelectorAll("tr");
+    const nodeList = document.querySelectorAll(".MsoNormal");
 
-    const trsArray = [...nodeList];
+    const listOfBruteBrands = [...nodeList];
 
-    const listWithCategory = trsArray.map(({ innerText, children }) => {
-      const link = children[1].childNodes[0].href || "";
-      const [commands, description] = innerText.trim().split("	");
+    console.log("🚀 ~ commandsList ~ listOfBruteBrands", listOfBruteBrands);
 
-      return { commands, description, link };
-    });
-
-    const list = listWithCategory.filter(
-      (item) => !item.commands.match(/^[A-Z]$/g)
-    );
-
-    return list;
+    return listOfBruteBrands;
   });
 
-  for (let i = 0; i < commandsList.length; i++) {
-    try {
-      //Hardcoded
-      await page.goto(
-        !!commandsList[i].link && !commandsList[i].link.includes("wikipedia")
-          ? commandsList[i].link
-          : "https://ss64.com/bash/alias.html"
-      );
-
-      await page.waitForSelector(".tbtn");
-
-      const detailedInfo = await page.evaluate(async () => {
-        const nodeList = document.querySelectorAll("pre");
-
-        const preArray = [...nodeList];
-
-        const infoList = preArray.map((paragraph) => paragraph.innerHTML);
-
-        return infoList;
-      });
-
-      await page.goBack();
-
-      promiseCommandListWithInfo.push({
-        ...commandsList[i],
-        info: detailedInfo,
-      });
-    } catch (error) {
-      console.log("error: ", error);
-      promiseCommandListWithInfo.push(commandsList[i]);
-    }
-  }
-
-  const commandListWithInfo = await (async () => {
-    return Promise.all(promiseCommandListWithInfo);
-  })();
-
-  generateJsonFile({
-    fileName: "commands-list",
-    fileContent: commandListWithInfo,
-  });
+  // generateJsonFile({
+  //   fileName: "commands-list",
+  //   fileContent: commandListWithInfo,
+  // });
 
   await browser.close();
 })();
